@@ -87,16 +87,14 @@ def GetYieldsVectorized(interaction, nc=NC, **kwargs):
         np.array: array of photons,
         np.array: array of electrons
     '''
-
-    interaction_object = GetInteractionObject(interaction)
     if 'energy' in kwargs.keys():
-        if interaction_object == GetInteractionObject('nr') and kwargs['energy'] > 2e2:
+        if interaction == NEST_INTERACTION_NUMBER['nr'] and kwargs['energy'] > 2e2:
             return -1, -1
-        if interaction_object == GetInteractionObject('gammaray') and kwargs['energy'] > 3e3:
+        if interaction == NEST_INTERACTION_NUMBER['gammaray'] and kwargs['energy'] > 3e3:
             return -1, -1
-        if interaction_object == GetInteractionObject('beta') and kwargs['energy'] > 3e3:
+        if interaction == NEST_INTERACTION_NUMBER['beta'] and kwargs['energy'] > 3e3:
             return -1, -1
-    yield_object = nc.GetYields(interaction=interaction_object, **kwargs)
+    yield_object = nc.GetYields(interaction=INTERACTION_TYPE(interaction), **kwargs)
     # returns the yields for the type of yield we are considering
     event_quanta = nc.GetQuanta(yield_object)
 
