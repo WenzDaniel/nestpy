@@ -63,22 +63,20 @@ def GetInteractionObject(name):
     return interaction_object
 
 @np.vectorize
-def GetYieldsVectorized(interaction, yield_type, nc=NC, **kwargs):
+def GetYieldsVectorized(interaction, nc=NC, **kwargs):
     '''
     This function calculates nc.GetYields for the various interactions and arguments we pass into it.
 
     Requires:
         - GetInteractionObject from interactionkeys
-            - strings passed through get us the numeric equivalent for each interaction
+            - NEST_INTERACTION_NUMBER to identify interaction type
         - energy array
         - nc.GetYields (pass through interaction, energies, field value)
             - Returns dictionary with yield types and yield values at each interaction energy value.
 
     Parameters:
+        interaction (int): interaction type according to NEST_INTERACTION_NUMBER
         nc (NESTcalc object): must specify nc=nestpy.NESTcalc(detector) to use non-default
-        interaction (str): interaction type, here using 'nr' (nuclear recoil),
-        gammaray', 'beta', '206Pb', and 'alpha'.
-        yield_type (str): Either 'PhotonYield' or 'ElectronYield' to return proper yield values.
         **kwargs (var): Field values (array), energy values (array),
         can also contain other allowed nc.GetYields arguments.
 
@@ -86,21 +84,26 @@ def GetYieldsVectorized(interaction, yield_type, nc=NC, **kwargs):
         yield_object (dict): Keys of yield_type, values of yields for given type based on nc.GetYields
 
     Returns:
-        getattr(yield_object, yield_type) (array): array of yield values for a given yield_object (nr, etc)
-        and a given yield_type (photon, electron yield as defined in parameters.)
+        np.array: array of photons,
+        np.array: array of electrons
     '''
 
     interaction_object = GetInteractionObject(interaction)
     if 'energy' in kwargs.keys():
         if interaction_object == GetInteractionObject('nr') and kwargs['energy'] > 2e2:
-            return np.nan
+            return -1, -1
         if interaction_object == GetInteractionObject('gammaray') and kwargs['energy'] > 3e3:
-            return np.nan
+            return -1, -1
         if interaction_object == GetInteractionObject('beta') and kwargs['energy'] > 3e3:
-            return np.nan
-    yield_object = nc.GetYields(interaction = interaction_object, **kwargs)
+            return -1, -1
+    yield_object = nc.GetYields(interaction=interaction_object, **kwargs)
     # returns the yields for the type of yield we are considering
-    return getattr(yield_object, yield_type)
+    event_quanta = nc.GetQuanta(yield_object)
+
+    photons = event_quanta.photons
+    electrons = event_quanta.electrons
+
+    return photons, electrons
 
 def PhotonYield(**kwargs):
     '''
